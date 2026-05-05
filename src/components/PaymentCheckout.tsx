@@ -40,7 +40,7 @@ export default function PaymentCheckout({ amount, description, onSuccess, onCanc
 
           <div className="min-h-[150px] relative z-0">
             <PayPalScriptProvider options={{ 
-              clientId: "AbZZDYfyzd7vhLShl-N6fggavp0ZOQOtlqjua4n2l0r3nwF_JT8C23FSzkgWLBO2EV68ODQA2T5kQ6md",
+              clientId: import.meta.env.VITE_PAYPAL_CLIENT_ID,
               currency: "EUR",
               intent: "capture"
             }}>

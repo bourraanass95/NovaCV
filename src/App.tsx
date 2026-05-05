@@ -116,7 +116,7 @@ export default function App() {
       
       const params: Record<string, string> = {
         cmd: '_xclick-subscriptions',
-        business: 'anassbourra.1995@gmail.com', // Using user's paypal email
+        business: import.meta.env.VITE_PAYPAL_BUSINESS_EMAIL, 
         item_name: 'NovaCV - Abonnement Pro Mensuel',
         item_number: 'AIPro-CLD-SUB',
         a3: '4.99', // Amount
