@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { ArrowLeft, User, Shield, Info, CreditCard, ChevronRight, X } from 'lucide-react';
-import { auth, db } from '@/src/lib/firebase';
+import { auth, db, handleFirestoreError, OperationType } from '@/src/lib/firebase';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { updateProfile, updatePassword } from 'firebase/auth';
 import { toast } from 'sonner';
@@ -33,7 +33,12 @@ export default function ProfilePage({ onBack, userStatus, onChangePlan }: Profil
       if (displayName !== user.displayName) {
         await updateProfile(user, { displayName });
         // update users collection if needed
-        await setDoc(doc(db, 'users', user.uid), { name: displayName }, { merge: true });
+        const userPath = `users/${user.uid}`;
+        try {
+          await setDoc(doc(db, 'users', user.uid), { name: displayName }, { merge: true });
+        } catch (err) {
+          handleFirestoreError(err, OperationType.WRITE, userPath);
+        }
       }
       
       if (newPassword.length > 0) {

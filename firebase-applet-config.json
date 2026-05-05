@@ -1,10 +1,10 @@
 {
-  "projectId": "remixed-project-id",
-  "appId": "remixed-app-id",
-  "apiKey": "remixed-api-key",
-  "authDomain": "remixed-auth-domain",
-  "firestoreDatabaseId": "remixed-firestore-database-id",
-  "storageBucket": "remixed-storage-bucket",
-  "messagingSenderId": "remixed-messaging-sender-id",
-  "measurementId": "remixed-measurement-id"
+  "projectId": "hourlytrack",
+  "appId": "1:335907610721:web:82bc8d00615b9f9885ca20",
+  "apiKey": "AIzaSyAg6aX_d42bVZowBCf_Ym1YKFxrlfrJnwg",
+  "authDomain": "hourlytrack.firebaseapp.com",
+  "firestoreDatabaseId": "ai-studio-d0de9b03-3f48-471d-917a-ac52c2003bba",
+  "storageBucket": "hourlytrack.firebasestorage.app",
+  "messagingSenderId": "335907610721",
+  "measurementId": ""
 }

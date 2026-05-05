@@ -7,7 +7,7 @@ import AuthModal from './components/AuthModal';
 import PlanSelectionModal from './components/PlanSelectionModal';
 import PaymentCheckout from './components/PaymentCheckout';
 import { Toaster } from '@/components/ui/sonner';
-import { auth, db } from './lib/firebase';
+import { auth, db, handleFirestoreError, OperationType } from './lib/firebase';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { ResumeData, UserStatus } from './types';
@@ -42,18 +42,28 @@ export default function App() {
         if (paymentSuccess === 'true') {
           try {
             if (plan === 'pro') {
-              await setDoc(doc(db, 'users', u.uid), {
-                uid: u.uid,
-                email: u.email,
-                status: 'pro',
-                updatedAt: serverTimestamp()
-              }, { merge: true });
+              const userPath = `users/${u.uid}`;
+              try {
+                await setDoc(doc(db, 'users', u.uid), {
+                  uid: u.uid,
+                  email: u.email,
+                  status: 'pro',
+                  updatedAt: serverTimestamp()
+                }, { merge: true });
+              } catch (e) {
+                handleFirestoreError(e, OperationType.WRITE, userPath);
+              }
               toast.success("Abonnement Pro activé avec succès !");
             } else if (plan === 'single_paid' && cvId) {
-              await setDoc(doc(db, 'resumes', cvId), { 
-                isPaid: true,
-                updatedAt: serverTimestamp()
-              }, { merge: true });
+              const resumePath = `resumes/${cvId}`;
+              try {
+                await setDoc(doc(db, 'resumes', cvId), { 
+                  isPaid: true,
+                  updatedAt: serverTimestamp()
+                }, { merge: true });
+              } catch (e) {
+                handleFirestoreError(e, OperationType.WRITE, resumePath);
+              }
               toast.success("CV HD débloqué avec succès !");
             }
           } catch (e) {
@@ -65,13 +75,18 @@ export default function App() {
         }
 
         // Fetch user status
-        const userDoc = await getDoc(doc(db, 'users', u.uid));
-        if (userDoc.exists()) {
-          const status = userDoc.data().status as UserStatus;
-          setUserStatus(status);
-          if (view === 'landing') setView('dashboard');
-        } else {
-          if (view === 'landing') setView('dashboard');
+        const userPath = `users/${u.uid}`;
+        try {
+          const userDoc = await getDoc(doc(db, 'users', u.uid));
+          if (userDoc.exists()) {
+            const status = userDoc.data().status as UserStatus;
+            setUserStatus(status);
+            if (view === 'landing') setView('dashboard');
+          } else {
+            if (view === 'landing') setView('dashboard');
+          }
+        } catch (e) {
+          handleFirestoreError(e, OperationType.GET, userPath);
         }
       } else {
         setUserStatus('free');
@@ -133,15 +148,20 @@ export default function App() {
   const handleCheckoutSuccess = async (details: any) => {
     setCheckoutConfig(prev => ({ ...prev, isOpen: false }));
     if (checkoutConfig.plan === 'pro' && user) {
-        await setDoc(doc(db, 'users', user.uid), {
-          uid: user.uid,
-          email: user.email,
-          status: 'pro',
-          updatedAt: serverTimestamp()
-        }, { merge: true });
-        setUserStatus('pro');
-        toast.success("Accès Pro activé avec succès !");
-        setView('dashboard');
+        const userPath = `users/${user.uid}`;
+        try {
+          await setDoc(doc(db, 'users', user.uid), {
+            uid: user.uid,
+            email: user.email,
+            status: 'pro',
+            updatedAt: serverTimestamp()
+          }, { merge: true });
+          setUserStatus('pro');
+          toast.success("Accès Pro activé avec succès !");
+          setView('dashboard');
+        } catch (e) {
+          handleFirestoreError(e, OperationType.WRITE, userPath);
+        }
     }
   };
 
@@ -212,6 +232,7 @@ export default function App() {
           setShowAuthModal(false);
           const currentUser = auth.currentUser;
           if (currentUser) {
+            const userPath = `users/${currentUser.uid}`;
             try {
               const d = await getDoc(doc(db, 'users', currentUser.uid));
               if (d.exists()) {
@@ -227,6 +248,7 @@ export default function App() {
               }
             } catch (e) {
               console.error("Error fetching user doc after login:", e);
+              handleFirestoreError(e, OperationType.GET, userPath);
               setShowPlanModal(true);
             }
           }

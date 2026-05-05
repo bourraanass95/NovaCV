@@ -4,9 +4,10 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Plus, Layout, FileText, Settings, LogOut, ChevronRight, Download, Edit3, Trash2 } from 'lucide-react';
-import { auth, db } from '@/src/lib/firebase';
+import { auth, db, handleFirestoreError, OperationType } from '@/src/lib/firebase';
 import { collection, query, where, getDocs, deleteDoc, doc } from 'firebase/firestore';
 import { toast } from 'sonner';
+import { UserStatus } from '@/src/types';
 
 interface DashboardProps {
   onNew: () => void;
@@ -34,15 +35,13 @@ export default function Dashboard({ onNew, onEdit, onLogout, onProfile, userStat
 
         // Filter based on status if not pro
         if (userStatus !== 'pro') {
-          // If not pro, we only show paid CVs or the very last one? 
-          // User said "only the current cv he is workin on is visible"
-          // I'll show only CVs where isPaid is true, OR if no paid CVs, show nothing or instructions
           docs = docs.filter((d: any) => d.isPaid === true);
         }
 
         setCvs(docs);
       } catch (e) {
         console.error("Error fetching CVs", e);
+        handleFirestoreError(e, OperationType.LIST, 'resumes');
         toast.error("Erreur lors de la récupération de vos CV.");
       } finally {
         setLoading(false);
@@ -55,10 +54,12 @@ export default function Dashboard({ onNew, onEdit, onLogout, onProfile, userStat
   const handleDelete = async (id: string) => {
     if (!confirm("Voulez-vous vraiment supprimer ce CV ?")) return;
     try {
+      const resumePath = `resumes/${id}`;
       await deleteDoc(doc(db, 'resumes', id));
       setCvs(prev => prev.filter(c => c.id !== id));
       toast.success("CV supprimé.");
     } catch (e) {
+      handleFirestoreError(e, OperationType.DELETE, `resumes/${id}`);
       toast.error("Erreur lors de la suppression.");
     }
   };

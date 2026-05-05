@@ -136,11 +136,11 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
                   />
                 </div>
 
-                {authMode !== 'reset' && (
+                {(authMode as string) !== 'reset' && (
                   <div className="space-y-2">
                     <div className="flex justify-between items-center px-1">
                       <Label htmlFor="password" className="text-[10px] font-black uppercase tracking-widest text-slate-400">Mot de passe</Label>
-                      {authMode === 'login' && (
+                      {(authMode as string) === 'login' && (
                         <button 
                           type="button"
                           onClick={() => setAuthMode('reset')}
@@ -156,7 +156,7 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
                       placeholder="••••••••" 
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
-                      required={authMode !== 'reset'}
+                      required={(authMode as string) !== 'reset'}
                       className="h-12 bg-slate-50 border-slate-100 rounded-xl focus:ring-indigo-600 transition-all font-medium"
                     />
                   </div>

@@ -23,7 +23,7 @@ import { toast } from 'sonner';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 import { UserStatus } from '@/src/types';
-import { auth, db } from '@/src/lib/firebase';
+import { auth, db, handleFirestoreError, OperationType } from '@/src/lib/firebase';
 import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
 
 const initialData: ResumeData = {
@@ -95,8 +95,9 @@ export default function ResumeBuilder({ onBack, initialData: loadedData, user, u
 
   const saveToFirestore = async () => {
     if (!user) return;
+    const cvId = (data as any).id || crypto.randomUUID();
+    const resumePath = `resumes/${cvId}`;
     try {
-      const cvId = (data as any).id || crypto.randomUUID();
       await setDoc(doc(db, 'resumes', cvId), {
         ...data,
         id: cvId,
@@ -108,6 +109,7 @@ export default function ResumeBuilder({ onBack, initialData: loadedData, user, u
       toast.success("CV sauvegardé dans votre dashboard.");
     } catch (e) {
       console.error("Save error", e);
+      handleFirestoreError(e, OperationType.WRITE, resumePath);
       toast.error("Erreur lors de la sauvegarde.");
     }
   };
@@ -478,14 +480,19 @@ export default function ResumeBuilder({ onBack, initialData: loadedData, user, u
     
     if (checkoutConfig.plan === 'single_paid') {
       const cvId = (data as any).id || crypto.randomUUID();
+      const resumePath = `resumes/${cvId}`;
       
       if (user) {
-        await setDoc(doc(db, 'resumes', cvId), { 
-          ...data,
-          id: cvId,
-          isPaid: true,
-          updatedAt: serverTimestamp()
-        }, { merge: true });
+        try {
+          await setDoc(doc(db, 'resumes', cvId), { 
+            ...data,
+            id: cvId,
+            isPaid: true,
+            updatedAt: serverTimestamp()
+          }, { merge: true });
+        } catch (e) {
+          handleFirestoreError(e, OperationType.WRITE, resumePath);
+        }
         setData(prev => ({ ...prev, id: cvId } as any));
       }
       
@@ -566,10 +573,15 @@ export default function ResumeBuilder({ onBack, initialData: loadedData, user, u
         if (user) {
           const cvId = (data as any).id;
           if (cvId) {
-            await setDoc(doc(db, 'resumes', cvId), { 
-              hdDownloaded: true,
-              isPaid: true // Ensure it stays paid
-            }, { merge: true });
+            const resumePath = `resumes/${cvId}`;
+            try {
+              await setDoc(doc(db, 'resumes', cvId), { 
+                hdDownloaded: true,
+                isPaid: true // Ensure it stays paid
+              }, { merge: true });
+            } catch (e) {
+              handleFirestoreError(e, OperationType.UPDATE, resumePath);
+            }
           }
         }
       }

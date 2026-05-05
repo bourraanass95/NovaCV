@@ -1,6 +1,6 @@
 {
-  "name": "Remix: CV-Génie : L\u0027IA au service de votre carrière",
-  "description": "Un générateur de CV intelligent optimisé pour le marché français. Créez des CV professionnels, optimisés pour les ATS, avec l\u0027aide de l\u0027IA Gemini.",
+  "name": "Nova CV",
+  "description": "Un générateur de CV intelligent optimisé pour le marché français. Créez des CV professionnels, optimisés pour les ATS, avec l'aide de l'IA Gemini.",
   "requestFramePermissions": [],
   "majorCapabilities": []
 }

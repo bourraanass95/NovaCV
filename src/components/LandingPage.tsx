@@ -28,7 +28,7 @@ const Marquee = ({ children }: { children: React.ReactNode }) => (
   </div>
 );
 
-export default function LandingPage({ onStart, onLogin }: LandingPageProps) {
+export default function LandingPage({ onStart, onLogin, onSelectPlan }: LandingPageProps) {
   const [modal, setModal] = useState<'privacy' | 'terms' | null>(null);
 
   const containerVariants = {

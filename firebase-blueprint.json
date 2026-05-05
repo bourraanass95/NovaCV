@@ -1,0 +1,47 @@
+{
+  "entities": {
+    "User": {
+      "title": "User Profile",
+      "description": "User account and subscription data",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "email": { "type": "string" },
+        "status": { "type": "string", "enum": ["free", "pro"] },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "email", "status"]
+    },
+    "Resume": {
+      "title": "Resume",
+      "description": "Resume document data",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "userId": { "type": "string" },
+        "templateId": { "type": "string" },
+        "personalInfo": { "type": "object" },
+        "experience": { "type": "array" },
+        "education": { "type": "array" },
+        "skills": { "type": "array" },
+        "languages": { "type": "array" },
+        "projects": { "type": "array" },
+        "interests": { "type": "array" },
+        "isPaid": { "type": "boolean" },
+        "hdDownloaded": { "type": "boolean" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "userId", "updatedAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "Store user profiles"
+    },
+    "/resumes/{resumeId}": {
+      "schema": "Resume",
+      "description": "Store user resumes"
+    }
+  }
+}

@@ -1,17 +1,16 @@
 rules_version = '2';
-
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Default-deny catch-all
+    // 0. Global Safety Net
     match /{document=**} {
       allow read, write: if false;
     }
 
-    // Identity helpers
+    // Helpers
     function isSignedIn() {
       return request.auth != null;
     }
-    
+
     function isOwner(userId) {
       return isSignedIn() && request.auth.uid == userId;
     }
@@ -20,37 +19,49 @@ service cloud.firestore {
       return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
     }
 
-    // Resume Collection
-    match /resumes/{resumeId} {
-      // Validate the document ID
-      allow get, update, delete: if isValidId(resumeId);
-      
-      // List CVs owned by the user
-      allow list: if isSignedIn() && resource.data.userId == request.auth.uid;
-      
-      // Get single CV if owner
-      allow get: if isSignedIn() && resource.data.userId == request.auth.uid;
-      
-      // Create CV tagged with user ID
-      allow create: if isSignedIn() 
-        && request.resource.data.userId == request.auth.uid
-        && request.resource.data.keys().hasAll(['userId', 'templateId', 'personalInfo'])
-        // Temporal integrity
-        && request.resource.data.updatedAt == request.time;
-        
-      // Update if owner and preserving identity
-      allow update: if isSignedIn() 
-        && resource.data.userId == request.auth.uid
-        && request.resource.data.userId == resource.data.userId
-        && request.resource.data.updatedAt == request.time;
-        
-      // Delete if owner
-      allow delete: if isSignedIn() && resource.data.userId == request.auth.uid;
+    // --- Users Collection ---
+    match /users/{userId} {
+      allow get: if isOwner(userId);
+      allow create: if isOwner(userId) && isValidUser(request.resource.data);
+      allow update: if isOwner(userId) && isValidUser(request.resource.data) && (
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'updatedAt']) ||
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['email', 'updatedAt']) ||
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['uid', 'email', 'status', 'updatedAt'])
+      );
+
+      function isValidUser(data) {
+        return data.keys().hasAll(['uid', 'email', 'status']) 
+          && data.keys().size() <= 10
+          && data.uid == request.auth.uid
+          && data.email is string && data.email.size() < 150
+          && data.status in ['free', 'pro', 'single_paid'];
+      }
     }
 
-    // User Profiles / Status
-    match /users/{userId} {
-      allow read, write: if isOwner(userId);
+    // --- Resumes Collection ---
+    match /resumes/{resumeId} {
+      allow list: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow get: if isOwner(resource.data.userId);
+      allow create: if isSignedIn() 
+        && request.resource.data.userId == request.auth.uid 
+        && isValidResume(request.resource.data);
+      allow update: if isOwner(resource.data.userId) 
+        && isValidResume(request.resource.data)
+        && (
+          // Action: Edit Content
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+            'templateId', 'personalInfo', 'experience', 'education', 
+            'skills', 'languages', 'projects', 'interests', 'updatedAt', 'id', 'userId', 'isPaid', 'hdDownloaded'
+          ])
+        );
+      allow delete: if isOwner(resource.data.userId);
+
+      function isValidResume(data) {
+        return data.keys().hasAll(['id', 'userId', 'updatedAt'])
+          && data.userId == request.auth.uid
+          && data.id is string
+          && (data.updatedAt == request.time || data.updatedAt == null); 
+      }
     }
   }
 }
