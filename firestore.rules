@@ -1,0 +1,56 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Default-deny catch-all
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Identity helpers
+    function isSignedIn() {
+      return request.auth != null;
+    }
+    
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    // Resume Collection
+    match /resumes/{resumeId} {
+      // Validate the document ID
+      allow get, update, delete: if isValidId(resumeId);
+      
+      // List CVs owned by the user
+      allow list: if isSignedIn() && resource.data.userId == request.auth.uid;
+      
+      // Get single CV if owner
+      allow get: if isSignedIn() && resource.data.userId == request.auth.uid;
+      
+      // Create CV tagged with user ID
+      allow create: if isSignedIn() 
+        && request.resource.data.userId == request.auth.uid
+        && request.resource.data.keys().hasAll(['userId', 'templateId', 'personalInfo'])
+        // Temporal integrity
+        && request.resource.data.updatedAt == request.time;
+        
+      // Update if owner and preserving identity
+      allow update: if isSignedIn() 
+        && resource.data.userId == request.auth.uid
+        && request.resource.data.userId == resource.data.userId
+        && request.resource.data.updatedAt == request.time;
+        
+      // Delete if owner
+      allow delete: if isSignedIn() && resource.data.userId == request.auth.uid;
+    }
+
+    // User Profiles / Status
+    match /users/{userId} {
+      allow read, write: if isOwner(userId);
+    }
+  }
+}
