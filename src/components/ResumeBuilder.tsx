@@ -462,12 +462,7 @@ export default function ResumeBuilder({ onBack, initialData: loadedData, user, u
   const handleRealPayment = async (type: UserStatus | 'single_paid') => {
     setShowPaymentModal(false);
     if (type === 'pro') {
-      setCheckoutConfig({
-        isOpen: true,
-        plan: 'pro',
-        amount: '4.99',
-        description: 'Accès Illimité PRO'
-      });
+      onUpgrade();
       return;
     }
 

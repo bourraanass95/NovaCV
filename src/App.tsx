@@ -180,6 +180,7 @@ export default function App() {
             if (user) {
               handleSelectPlan('pro');
             } else {
+              setPendingAction('buy_pro');
               setShowAuthModal(true);
             }
           }}
@@ -209,7 +210,10 @@ export default function App() {
 
       <AuthModal 
         isOpen={showAuthModal} 
-        onClose={() => setShowAuthModal(false)}
+        onClose={() => {
+          setShowAuthModal(false);
+          setPendingAction(null);
+        }}
         onSuccess={async () => {
           setShowAuthModal(false);
           const currentUser = auth.currentUser;
