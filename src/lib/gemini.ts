@@ -1,8 +1,20 @@
 import { GoogleGenAI } from "@google/genai";
 
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+let aiInstance: GoogleGenAI | null = null;
+
+function getAi() {
+  if (!aiInstance) {
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey) {
+      throw new Error("GEMINI_API_KEY is missing. Please configure it in your environment variables.");
+    }
+    aiInstance = new GoogleGenAI({ apiKey });
+  }
+  return aiInstance;
+}
 
 export async function improveSummary(summary: string, jobTitle: string, targetJob?: string) {
+  const ai = getAi();
   const targetContext = targetJob ? ` pour cibler un poste de "${targetJob}"` : "";
   const prompt = `En tant qu'expert en recrutement pour le marché français, améliore ce résumé professionnel pour un profil de "${jobTitle}"${targetContext}. 
   Rends-le plus percutant, professionnel et optimisé pour les ATS. 
@@ -21,6 +33,7 @@ export async function improveSummary(summary: string, jobTitle: string, targetJo
 }
 
 export async function improveExperienceDescription(description: string, position: string, targetJob?: string) {
+  const ai = getAi();
   const targetContext = targetJob ? `Tout en gardant la vérité sur l'expérience, oriente la description pour être plus attractive pour un recruteur cherchant un "${targetJob}". ` : "";
   const prompt = `En tant qu'expert en recrutement, améliore cette description d'expérience professionnelle pour un poste de "${position}".
   ${targetContext}Utilise des verbes d'action forts, quantifie les résultats si possible, et optimise pour les mots-clés ATS du marché français.
@@ -38,6 +51,7 @@ export async function improveExperienceDescription(description: string, position
 }
 
 export async function suggestSkills(jobTitle: string, experience: string, targetJob?: string) {
+  const ai = getAi();
   const targetContext = targetJob ? ` en visant un poste de "${targetJob}"` : "";
   const prompt = `Basé sur l'intitulé de poste actuel "${jobTitle}"${targetContext} et l'expérience suivante : "${experience}", suggère une liste de 10 compétences clés (Soft Skills et Hard Skills) pertinentes pour le marché français.
   
@@ -52,6 +66,7 @@ export async function suggestSkills(jobTitle: string, experience: string, target
 }
 
 export async function improveEducationDescription(description: string, degree: string, school: string) {
+  const ai = getAi();
   const prompt = `En tant qu'expert en recrutement, améliore cette description de formation pour un diplôme de "${degree}" à "${school}".
   Mets en avant les compétences acquises, les projets majeurs ou les distinctions si mentionnés.
   
@@ -68,6 +83,7 @@ export async function improveEducationDescription(description: string, degree: s
 }
 
 export async function improveProjectDescription(description: string, name: string) {
+  const ai = getAi();
   const prompt = `En tant qu'expert en recrutement, améliore cette description de projet personnel pour un projet nommé "${name}".
   Rends-la plus impactante, technique et axée sur les solutions apportées.
   
@@ -84,6 +100,7 @@ export async function improveProjectDescription(description: string, name: strin
 }
 
 export async function analyzeResume(resumeData: any, targetJob?: string) {
+  const ai = getAi();
   const targetContext = targetJob ? ` spécifiquement pour une candidature au poste de "${targetJob}"` : "";
   const prompt = `Analyse ce CV pour le marché français${targetContext} et donne des conseils d'amélioration. 
   Vérifie la clarté, l'impact, et l'optimisation ATS.
