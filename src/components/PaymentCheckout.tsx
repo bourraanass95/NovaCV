@@ -21,7 +21,7 @@ export default function PaymentCheckout({ amount, description, onSuccess, onCanc
           initial={{ scale: 0.95, y: 20, opacity: 0 }}
           animate={{ scale: 1, y: 0, opacity: 1 }}
           exit={{ scale: 0.95, y: 20, opacity: 0 }}
-          className="bg-white rounded-[2.5rem] shadow-2xl w-full max-w-md overflow-hidden relative flex flex-col p-8"
+          className="bg-white rounded-[2.5rem] shadow-2xl w-full max-w-md max-h-[85vh] overflow-y-auto relative flex flex-col p-8 md:p-10"
         >
           <button onClick={onCancel} className="absolute top-6 right-6 p-2 rounded-full hover:bg-slate-100 transition-colors z-10">
             <X className="w-5 h-5 text-slate-400" />

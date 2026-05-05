@@ -22,6 +22,7 @@ export default function App() {
   const [editingData, setEditingData] = useState<ResumeData | null>(null);
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [showPlanModal, setShowPlanModal] = useState(false);
+  const [pendingAction, setPendingAction] = useState<string | null>(null);
   const [checkoutConfig, setCheckoutConfig] = useState<{ isOpen: boolean, plan: 'pro' | null, amount: string, description: string }>({
     isOpen: false,
     plan: null,
@@ -99,6 +100,7 @@ export default function App() {
     if (!user) {
       if (plan === 'pro') {
         setShowPlanModal(false);
+        setPendingAction('buy_pro');
         setShowAuthModal(true);
       } else {
         setShowPlanModal(false);
@@ -109,35 +111,12 @@ export default function App() {
 
     if (plan === 'pro') {
       setShowPlanModal(false);
-      
-      const form = document.createElement('form');
-      form.method = 'POST';
-      form.action = 'https://www.paypal.com/cgi-bin/webscr';
-      
-      const params: Record<string, string> = {
-        cmd: '_xclick-subscriptions',
-        business: import.meta.env.VITE_PAYPAL_BUSINESS_EMAIL, 
-        item_name: 'NovaCV - Abonnement Pro Mensuel',
-        item_number: 'AIPro-CLD-SUB',
-        a3: '4.99', // Amount
-        p3: '1',    // Duration
-        t3: 'M',    // Month (Monthly recurring)
-        src: '1',   // Recurring
-        currency_code: 'EUR',
-        return: `${window.location.origin}/?payment_success=true&plan=pro`,
-        cancel_return: window.location.origin,
-      };
-
-      for (const [key, value] of Object.entries(params)) {
-        const input = document.createElement('input');
-        input.type = 'hidden';
-        input.name = key;
-        input.value = value;
-        form.appendChild(input);
-      }
-
-      document.body.appendChild(form);
-      form.submit();
+      setCheckoutConfig({
+        isOpen: true,
+        plan: 'pro',
+        amount: '4.99',
+        description: 'Abonnement Pro Mensuel'
+      });
     } else {
       setShowPlanModal(false);
       if (view === 'landing') setView('builder');
@@ -241,18 +220,46 @@ export default function App() {
               if (d.exists()) {
                 const status = d.data().status as UserStatus;
                 setUserStatus(status);
-                if (status === 'pro') {
+                if (pendingAction === 'buy_pro' && status !== 'pro') {
+                  setPendingAction(null);
+                  setCheckoutConfig({
+                    isOpen: true,
+                    plan: 'pro',
+                    amount: '4.99',
+                    description: 'Abonnement Pro Mensuel'
+                  });
+                } else if (status === 'pro') {
                   setView('dashboard');
                 } else {
                   setShowPlanModal(true);
                 }
               } else {
-                setShowPlanModal(true);
+                if (pendingAction === 'buy_pro') {
+                  setPendingAction(null);
+                  setCheckoutConfig({
+                    isOpen: true,
+                    plan: 'pro',
+                    amount: '4.99',
+                    description: 'Abonnement Pro Mensuel'
+                  });
+                } else {
+                  setShowPlanModal(true);
+                }
               }
             } catch (e) {
               console.error("Error fetching user doc after login:", e);
               handleFirestoreError(e, OperationType.GET, userPath);
-              setShowPlanModal(true);
+              if (pendingAction === 'buy_pro') {
+                setPendingAction(null);
+                setCheckoutConfig({
+                  isOpen: true,
+                  plan: 'pro',
+                  amount: '4.99',
+                  description: 'Abonnement Pro Mensuel'
+                });
+              } else {
+                setShowPlanModal(true);
+              }
             }
           }
         }}
