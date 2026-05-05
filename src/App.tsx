@@ -204,6 +204,9 @@ export default function App() {
               setShowAuthModal(true);
             }
           }}
+          onProUpgraded={() => {
+            setUserStatus('pro');
+          }}
         />
       )}
 

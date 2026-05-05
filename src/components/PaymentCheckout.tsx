@@ -1,5 +1,5 @@
 import React from 'react';
-import { PayPalScriptProvider, PayPalButtons } from '@paypal/react-paypal-js';
+import { PayPalButtons } from '@paypal/react-paypal-js';
 import { motion, AnimatePresence } from 'motion/react';
 import { X, ShieldCheck } from 'lucide-react';
 
@@ -39,11 +39,6 @@ export default function PaymentCheckout({ amount, description, onSuccess, onCanc
           </div>
 
           <div className="min-h-[150px] relative z-0">
-            <PayPalScriptProvider options={{ 
-              clientId: import.meta.env.VITE_PAYPAL_CLIENT_ID,
-              currency: "EUR",
-              intent: "capture"
-            }}>
               <PayPalButtons
                 style={{ layout: 'vertical', color: 'blue', shape: 'rect' }}
                 createOrder={(data, actions) => {
@@ -70,7 +65,6 @@ export default function PaymentCheckout({ amount, description, onSuccess, onCanc
                   console.error("PayPal Error:", err);
                 }}
               />
-            </PayPalScriptProvider>
             <p className="text-center text-[10px] text-slate-400 mt-4 px-2">Vous pouvez payer par carte bancaire en cliquant sur le bouton ci-dessus (l'option apparaîtra dans la fenêtre de paiement).</p>
           </div>
         </motion.div>

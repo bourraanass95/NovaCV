@@ -47,7 +47,7 @@ const initialData: ResumeData = {
   interests: [],
 };
 
-export default function ResumeBuilder({ onBack, initialData: loadedData, user, userStatus, onUpgrade }: { onBack: () => void, initialData?: ResumeData, user: any, userStatus: UserStatus, onUpgrade: () => void }) {
+export default function ResumeBuilder({ onBack, initialData: loadedData, user, userStatus, onUpgrade, onProUpgraded }: { onBack: () => void, initialData?: ResumeData, user: any, userStatus: UserStatus, onUpgrade: () => void, onProUpgraded?: () => void }) {
   const [data, setData] = useState<ResumeData>(loadedData || initialData);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [activeTab, setActiveTab] = useState('personal');
@@ -62,6 +62,7 @@ export default function ResumeBuilder({ onBack, initialData: loadedData, user, u
   const [analysis, setAnalysis] = useState<any | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [cvPaid, setCvPaid] = useState(false);
+  const [sessionPro, setSessionPro] = useState(false);
   const [cvDownloaded, setCvDownloaded] = useState(false);
 
   // Sync state with loaded data
@@ -458,10 +459,15 @@ export default function ResumeBuilder({ onBack, initialData: loadedData, user, u
     }
   };
 
-  const handleRealPayment = async (type: UserStatus) => {
+  const handleRealPayment = async (type: UserStatus | 'single_paid') => {
     setShowPaymentModal(false);
     if (type === 'pro') {
-      onUpgrade();
+      setCheckoutConfig({
+        isOpen: true,
+        plan: 'pro',
+        amount: '4.99',
+        description: 'Accès Illimité PRO'
+      });
       return;
     }
 
@@ -478,7 +484,7 @@ export default function ResumeBuilder({ onBack, initialData: loadedData, user, u
   const handleCheckoutSuccess = async (details: any) => {
     setCheckoutConfig(prev => ({ ...prev, isOpen: false }));
     
-    if (checkoutConfig.plan === 'single_paid') {
+    if (checkoutConfig.plan === 'single_paid' || checkoutConfig.plan === 'pro') {
       const cvId = (data as any).id || crypto.randomUUID();
       const resumePath = `resumes/${cvId}`;
       
@@ -494,15 +500,33 @@ export default function ResumeBuilder({ onBack, initialData: loadedData, user, u
           handleFirestoreError(e, OperationType.WRITE, resumePath);
         }
         setData(prev => ({ ...prev, id: cvId } as any));
+        
+        if (checkoutConfig.plan === 'pro') {
+           const userPath = `users/${user.uid}`;
+           try {
+             await setDoc(doc(db, 'users', user.uid), {
+               status: 'pro',
+               updatedAt: serverTimestamp()
+             }, { merge: true });
+             if (onProUpgraded) {
+               onProUpgraded();
+             }
+           } catch (e) {
+             console.error("error updating user pro status");
+           }
+        }
       }
       
       setCvPaid(true);
+      if (checkoutConfig.plan === 'pro') {
+        setSessionPro(true);
+      }
       toast.success("Paiement validé avec succès ! Votre CV est prêt.");
     }
   };
 
   const handleDownloadClick = () => {
-    if (userStatus === 'free' && !cvPaid) {
+    if (userStatus === 'free' && !cvPaid && !sessionPro) {
       setShowPaymentModal(true);
     } else {
       downloadPDF();
@@ -510,12 +534,12 @@ export default function ResumeBuilder({ onBack, initialData: loadedData, user, u
   };
 
   const downloadPDF = async () => {
-    if (userStatus === 'free' && !cvPaid) {
+    if (userStatus === 'free' && !cvPaid && !sessionPro) {
       setShowPaymentModal(true);
       return;
     }
 
-    if (userStatus !== 'pro' && cvDownloaded) {
+    if (userStatus !== 'pro' && !sessionPro && cvDownloaded) {
       toast.error("Vous avez déjà téléchargé ce CV en HD. Passez au mode Pro pour des téléchargements illimités !");
       return;
     }
@@ -1560,17 +1584,17 @@ export default function ResumeBuilder({ onBack, initialData: loadedData, user, u
               </div>
             </motion.div>
             
-            <PaymentCheckout 
-              isOpen={checkoutConfig.isOpen}
-              amount={checkoutConfig.amount}
-              description={checkoutConfig.description}
-              onSuccess={handleCheckoutSuccess}
-              onCancel={() => setCheckoutConfig(prev => ({ ...prev, isOpen: false }))}
-            />
-
           </motion.div>
         )}
       </AnimatePresence>
+
+      <PaymentCheckout 
+        isOpen={checkoutConfig.isOpen}
+        amount={checkoutConfig.amount}
+        description={checkoutConfig.description}
+        onSuccess={handleCheckoutSuccess}
+        onCancel={() => setCheckoutConfig(prev => ({ ...prev, isOpen: false }))}
+      />
 
       {/* Authentication Modal - REMOVED, HANDLED BY APP.TSX */}
 
