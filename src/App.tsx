@@ -246,10 +246,8 @@ export default function App() {
                     amount: '4.99',
                     description: 'Abonnement Pro Mensuel'
                   });
-                } else if (status === 'pro') {
-                  setView('dashboard');
                 } else {
-                  setShowPlanModal(true);
+                  setView('dashboard');
                 }
               } else {
                 if (pendingAction === 'buy_pro') {
@@ -261,7 +259,7 @@ export default function App() {
                     description: 'Abonnement Pro Mensuel'
                   });
                 } else {
-                  setShowPlanModal(true);
+                  setView('dashboard');
                 }
               }
             } catch (e: any) {
@@ -276,7 +274,7 @@ export default function App() {
                   description: 'Abonnement Pro Mensuel'
                 });
               } else {
-                setShowPlanModal(true);
+                setView('dashboard');
               }
               
               const isPermissionError = e.message && (e.message.includes('permission-denied') || e.message.includes('Missing or insufficient permissions'));
