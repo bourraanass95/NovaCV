@@ -83,7 +83,8 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
       onSuccess();
       onClose();
     } catch (error: any) {
-      toast.error("Erreur d'authentification Google.");
+      console.error("Google Auth error:", error);
+      toast.error(`Erreur d'authentification Google: ${error.message || error.code || 'Inconnue'}`);
     } finally {
       setIsLoading(false);
     }
