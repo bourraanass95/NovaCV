@@ -30,6 +30,46 @@ export default function App() {
     description: ''
   });
 
+  const fetchUserStatus = async (u: any) => {
+    if (!u || !db) {
+      setUserStatus('free');
+      return;
+    }
+
+    const userPath = `users/${u.uid}`;
+    try {
+      const userRef = doc(db, 'users', u.uid);
+      const userDoc = await getDoc(userRef);
+      
+      if (userDoc.exists()) {
+        const status = userDoc.data().status as UserStatus;
+        setUserStatus(status);
+      } else {
+        // Create user doc if it doesn't exist (optional, but good for reporting)
+        setUserStatus('free');
+        try {
+          await setDoc(userRef, {
+            uid: u.uid,
+            email: u.email,
+            status: 'free',
+            updatedAt: serverTimestamp()
+          }, { merge: true });
+        } catch (err) {
+          console.warn("Could not auto-create user doc:", err);
+        }
+      }
+      
+      if (view === 'landing') {
+        setView('dashboard');
+      }
+    } catch (e: any) {
+      console.error("Failed to fetch user doc:", e);
+      // Fallback: if we can't read the user doc, we still let them in as free
+      setUserStatus('free');
+      if (view === 'landing') setView('dashboard');
+    }
+  };
+
   useEffect(() => {
     if (!auth) return;
     const unsub = onAuthStateChanged(auth, async (u) => {
@@ -44,7 +84,6 @@ export default function App() {
         if (paymentSuccess === 'true') {
           try {
             if (plan === 'pro') {
-              const userPath = `users/${u.uid}`;
               try {
                 await setDoc(doc(db, 'users', u.uid), {
                   uid: u.uid,
@@ -53,22 +92,17 @@ export default function App() {
                   updatedAt: serverTimestamp()
                 }, { merge: true });
               } catch (e) {
-                try {
-                  handleFirestoreError(e, OperationType.WRITE, userPath);
-                } catch(err) { }
+                console.error("Payment sync failed:", e);
               }
               toast.success("Abonnement Pro activé avec succès !");
             } else if (plan === 'single_paid' && cvId) {
-              const resumePath = `resumes/${cvId}`;
               try {
                 await setDoc(doc(db, 'resumes', cvId), { 
                   isPaid: true,
                   updatedAt: serverTimestamp()
                 }, { merge: true });
               } catch (e) {
-                try {
-                  handleFirestoreError(e, OperationType.WRITE, resumePath);
-                } catch(err) { }
+                console.error("Payment sync failed:", e);
               }
               toast.success("CV HD débloqué avec succès !");
             }
@@ -80,27 +114,13 @@ export default function App() {
           window.history.replaceState({}, document.title, window.location.pathname);
         }
 
-        // Fetch user status
-        const userPath = `users/${u.uid}`;
-        try {
-          const userDoc = await getDoc(doc(db, 'users', u.uid));
-          if (userDoc.exists()) {
-            const status = userDoc.data().status as UserStatus;
-            setUserStatus(status);
-            if (view === 'landing') setView('dashboard');
-          } else {
-            if (view === 'landing') setView('dashboard');
-          }
-        } catch (e: any) {
-          console.error("Failed to fetch user doc:", e);
-          if (view === 'landing') setView('dashboard'); // Fallback to Dashboard even if permissions fail
-        }
+        await fetchUserStatus(u);
       } else {
         setUserStatus('free');
       }
     });
     return () => unsub();
-  }, [view]);
+  }, [auth]); // Only depend on auth
 
   const handleSelectPlan = async (plan: 'pro' | 'single') => {
     if (!user) {
@@ -228,59 +248,20 @@ export default function App() {
           setShowAuthModal(false);
           setPendingAction(null);
         }}
-        onSuccess={async () => {
+        onSuccess={() => {
           setShowAuthModal(false);
           const currentUser = auth?.currentUser;
-          if (currentUser && db) {
-            const userPath = `users/${currentUser.uid}`;
-            try {
-              const d = await getDoc(doc(db, 'users', currentUser.uid));
-              if (d.exists()) {
-                const status = d.data().status as UserStatus;
-                setUserStatus(status);
-                if (pendingAction === 'buy_pro' && status !== 'pro') {
-                  setPendingAction(null);
-                  setCheckoutConfig({
-                    isOpen: true,
-                    plan: 'pro',
-                    amount: '4.99',
-                    description: 'Abonnement Pro Mensuel'
-                  });
-                } else {
-                  setView('dashboard');
-                }
-              } else {
-                if (pendingAction === 'buy_pro') {
-                  setPendingAction(null);
-                  setCheckoutConfig({
-                    isOpen: true,
-                    plan: 'pro',
-                    amount: '4.99',
-                    description: 'Abonnement Pro Mensuel'
-                  });
-                } else {
-                  setView('dashboard');
-                }
-              }
-            } catch (e: any) {
-              console.error("Error fetching user doc after login:", e);
-              
-              if (pendingAction === 'buy_pro') {
-                setPendingAction(null);
-                setCheckoutConfig({
-                  isOpen: true,
-                  plan: 'pro',
-                  amount: '4.99',
-                  description: 'Abonnement Pro Mensuel'
-                });
-              } else {
-                setView('dashboard');
-              }
-              
-              const isPermissionError = e.message && (e.message.includes('permission-denied') || e.message.includes('Missing or insufficient permissions'));
-              if (isPermissionError) {
-                 toast.error("Problème de permissions Firestore. Avez-vous déployé les Security Rules ?", { duration: 10000 });
-              }
+          if (currentUser) {
+            fetchUserStatus(currentUser);
+            
+            if (pendingAction === 'buy_pro' && userStatus !== 'pro') {
+              setPendingAction(null);
+              setCheckoutConfig({
+                isOpen: true,
+                plan: 'pro',
+                amount: '4.99',
+                description: 'Abonnement Pro Mensuel'
+              });
             }
           }
         }}

@@ -23,29 +23,33 @@ service cloud.firestore {
     match /users/{userId} {
       allow get: if isOwner(userId);
       allow create: if isOwner(userId) && isValidUser(request.resource.data);
-      allow update: if isOwner(userId) && isValidUser(request.resource.data) && (
-        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'updatedAt']) ||
-        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['email', 'updatedAt']) ||
-        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['uid', 'email', 'status', 'updatedAt'])
-      );
+      allow update: if isOwner(userId) 
+        && isValidUser(request.resource.data) 
+        && request.resource.data.uid == resource.data.uid // UID is immutable
+        && (
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'updatedAt', 'email'])
+        );
 
       function isValidUser(data) {
         return data.keys().hasAll(['uid', 'email', 'status']) 
-          && data.keys().size() <= 10
+          && data.keys().size() <= 6
           && data.uid == request.auth.uid
           && data.email is string && data.email.size() < 150
-          && data.status in ['free', 'pro', 'single_paid'];
+          && data.status in ['free', 'pro', 'single_paid']
+          && (data.updatedAt == request.time || data.updatedAt == null);
       }
     }
 
     // --- Resumes Collection ---
     match /resumes/{resumeId} {
       allow list: if isSignedIn() && resource.data.userId == request.auth.uid;
-      allow get: if isOwner(resource.data.userId);
+      allow get: if isSignedIn() && resource.data.userId == request.auth.uid;
       allow create: if isSignedIn() 
         && request.resource.data.userId == request.auth.uid 
         && isValidResume(request.resource.data);
-      allow update: if isOwner(resource.data.userId) 
+      allow update: if isSignedIn() 
+        && resource.data.userId == request.auth.uid
+        && request.resource.data.userId == resource.data.userId // userId is immutable
         && isValidResume(request.resource.data)
         && (
           // Action: Edit Content
@@ -54,12 +58,12 @@ service cloud.firestore {
             'skills', 'languages', 'projects', 'interests', 'updatedAt', 'id', 'userId', 'isPaid', 'hdDownloaded'
           ])
         );
-      allow delete: if isOwner(resource.data.userId);
+      allow delete: if isSignedIn() && resource.data.userId == request.auth.uid;
 
       function isValidResume(data) {
         return data.keys().hasAll(['id', 'userId', 'updatedAt'])
           && data.userId == request.auth.uid
-          && data.id is string
+          && data.id is string && data.id.size() <= 128
           && (data.updatedAt == request.time || data.updatedAt == null); 
       }
     }

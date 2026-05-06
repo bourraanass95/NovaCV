@@ -94,7 +94,16 @@ export default function ResumeBuilder({ onBack, initialData: loadedData, user, u
 
 
 
-  const saveToFirestore = async () => {
+  // Auto-save to Firestore (Debounced)
+  useEffect(() => {
+    if (!user || userStatus !== 'pro') return;
+    const timer = setTimeout(() => {
+      saveToFirestore(true);
+    }, 10000); 
+    return () => clearTimeout(timer);
+  }, [data]);
+
+  const saveToFirestore = async (isAuto = false) => {
     if (!user || !db) return;
     const cvId = (data as any).id || crypto.randomUUID();
     const resumePath = `resumes/${cvId}`;
@@ -107,13 +116,15 @@ export default function ResumeBuilder({ onBack, initialData: loadedData, user, u
         hdDownloaded: cvDownloaded,
         updatedAt: serverTimestamp(),
       });
-      toast.success("CV sauvegardé dans votre dashboard.");
+      if (!isAuto) toast.success("CV sauvegardé dans votre dashboard.");
     } catch (e) {
-      console.error("Save error", e);
-      try {
-        handleFirestoreError(e, OperationType.WRITE, resumePath);
-      } catch(err) { }
-      toast.error("Erreur lors de la sauvegarde. Vos règles Firestore bloquent peut-être l'action.");
+      if (!isAuto) {
+        console.error("Save error", e);
+        try {
+          handleFirestoreError(e, OperationType.WRITE, resumePath);
+        } catch(err) { }
+        toast.error("Erreur lors de la sauvegarde. Vos règles Firestore bloquent peut-être l'action.");
+      }
     }
   };
 
@@ -659,7 +670,7 @@ export default function ResumeBuilder({ onBack, initialData: loadedData, user, u
             <Button 
               variant="outline" 
               size="sm" 
-              onClick={saveToFirestore}
+              onClick={() => saveToFirestore(false)}
               className="hidden sm:flex text-indigo-600 border-indigo-100 bg-indigo-50/50 hover:bg-indigo-100"
             >
               Sauvegarder

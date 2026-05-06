@@ -36,11 +36,6 @@ export default function Dashboard({ onNew, onEdit, onLogout, onProfile, userStat
         // Sort by updatedAt
         docs.sort((a: any, b: any) => (b.updatedAt?.seconds || 0) - (a.updatedAt?.seconds || 0));
 
-        // Filter based on status if not pro
-        if (userStatus !== 'pro') {
-          docs = docs.filter((d: any) => d.isPaid === true);
-        }
-
         setCvs(docs);
       } catch (e) {
         console.error("Error fetching CVs", e);
