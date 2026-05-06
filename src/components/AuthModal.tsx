@@ -84,7 +84,16 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
       onClose();
     } catch (error: any) {
       console.error("Google Auth error:", error);
-      toast.error(`Erreur d'authentification Google: ${error.message || error.code || 'Inconnue'}`);
+      let errorMessage = error.message || error.code || 'Inconnue';
+      
+      if (error.code === 'auth/unauthorized-domain') {
+        const domain = window.location.hostname;
+        errorMessage = `Please add "${domain}" to your Authorized Domains in the Firebase Console (Authentication -> Settings -> Authorized domains).`;
+      }
+      
+      toast.error(`Erreur d'authentification Google: ${errorMessage}`, {
+        duration: 8000,
+      });
     } finally {
       setIsLoading(false);
     }
