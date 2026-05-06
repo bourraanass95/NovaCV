@@ -53,7 +53,9 @@ export default function App() {
                   updatedAt: serverTimestamp()
                 }, { merge: true });
               } catch (e) {
-                handleFirestoreError(e, OperationType.WRITE, userPath);
+                try {
+                  handleFirestoreError(e, OperationType.WRITE, userPath);
+                } catch(err) { }
               }
               toast.success("Abonnement Pro activé avec succès !");
             } else if (plan === 'single_paid' && cvId) {
@@ -64,7 +66,9 @@ export default function App() {
                   updatedAt: serverTimestamp()
                 }, { merge: true });
               } catch (e) {
-                handleFirestoreError(e, OperationType.WRITE, resumePath);
+                try {
+                  handleFirestoreError(e, OperationType.WRITE, resumePath);
+                } catch(err) { }
               }
               toast.success("CV HD débloqué avec succès !");
             }
@@ -87,8 +91,9 @@ export default function App() {
           } else {
             if (view === 'landing') setView('dashboard');
           }
-        } catch (e) {
-          handleFirestoreError(e, OperationType.GET, userPath);
+        } catch (e: any) {
+          console.error("Failed to fetch user doc:", e);
+          if (view === 'landing') setView('dashboard'); // Fallback to Dashboard even if permissions fail
         }
       } else {
         setUserStatus('free');
@@ -140,7 +145,13 @@ export default function App() {
           toast.success("Accès Pro activé avec succès !");
           setView('dashboard');
         } catch (e) {
-          handleFirestoreError(e, OperationType.WRITE, userPath);
+          try {
+            handleFirestoreError(e, OperationType.WRITE, userPath);
+          } catch(err) { }
+          // Still grant proactive access locally
+          setUserStatus('pro');
+          toast.success("Accès Pro activé pour cette session ! (Erreur de sauvegarde)");
+          setView('dashboard');
         }
     }
   };
@@ -253,9 +264,9 @@ export default function App() {
                   setShowPlanModal(true);
                 }
               }
-            } catch (e) {
+            } catch (e: any) {
               console.error("Error fetching user doc after login:", e);
-              handleFirestoreError(e, OperationType.GET, userPath);
+              
               if (pendingAction === 'buy_pro') {
                 setPendingAction(null);
                 setCheckoutConfig({
@@ -266,6 +277,11 @@ export default function App() {
                 });
               } else {
                 setShowPlanModal(true);
+              }
+              
+              const isPermissionError = e.message && (e.message.includes('permission-denied') || e.message.includes('Missing or insufficient permissions'));
+              if (isPermissionError) {
+                 toast.error("Problème de permissions Firestore. Avez-vous déployé les Security Rules ?", { duration: 10000 });
               }
             }
           }

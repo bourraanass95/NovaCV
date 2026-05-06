@@ -44,8 +44,12 @@ export default function Dashboard({ onNew, onEdit, onLogout, onProfile, userStat
         setCvs(docs);
       } catch (e) {
         console.error("Error fetching CVs", e);
-        handleFirestoreError(e, OperationType.LIST, 'resumes');
-        toast.error("Erreur lors de la récupération de vos CV.");
+        try {
+           handleFirestoreError(e, OperationType.LIST, 'resumes');
+        } catch(err) {
+           // ignore throw
+        }
+        toast.error("Erreur lors de la récupération de vos CV. Vérifiez vos règles Firestore.");
       } finally {
         setLoading(false);
       }
@@ -63,7 +67,11 @@ export default function Dashboard({ onNew, onEdit, onLogout, onProfile, userStat
       setCvs(prev => prev.filter(c => c.id !== id));
       toast.success("CV supprimé.");
     } catch (e) {
-      handleFirestoreError(e, OperationType.DELETE, `resumes/${id}`);
+      try {
+        handleFirestoreError(e, OperationType.DELETE, `resumes/${id}`);
+      } catch(err) {
+        // ignore
+      }
       toast.error("Erreur lors de la suppression.");
     }
   };

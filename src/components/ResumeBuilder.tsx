@@ -110,8 +110,10 @@ export default function ResumeBuilder({ onBack, initialData: loadedData, user, u
       toast.success("CV sauvegardé dans votre dashboard.");
     } catch (e) {
       console.error("Save error", e);
-      handleFirestoreError(e, OperationType.WRITE, resumePath);
-      toast.error("Erreur lors de la sauvegarde.");
+      try {
+        handleFirestoreError(e, OperationType.WRITE, resumePath);
+      } catch(err) { }
+      toast.error("Erreur lors de la sauvegarde. Vos règles Firestore bloquent peut-être l'action.");
     }
   };
 
@@ -492,7 +494,9 @@ export default function ResumeBuilder({ onBack, initialData: loadedData, user, u
             updatedAt: serverTimestamp()
           }, { merge: true });
         } catch (e) {
-          handleFirestoreError(e, OperationType.WRITE, resumePath);
+          try {
+            handleFirestoreError(e, OperationType.WRITE, resumePath);
+          } catch(err) {} 
         }
         setData(prev => ({ ...prev, id: cvId } as any));
         
@@ -599,7 +603,9 @@ export default function ResumeBuilder({ onBack, initialData: loadedData, user, u
                 isPaid: true // Ensure it stays paid
               }, { merge: true });
             } catch (e) {
-              handleFirestoreError(e, OperationType.UPDATE, resumePath);
+              try {
+                handleFirestoreError(e, OperationType.UPDATE, resumePath);
+              } catch(err) {} 
             }
           }
         }

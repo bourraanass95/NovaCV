@@ -37,7 +37,9 @@ export default function ProfilePage({ onBack, userStatus, onChangePlan }: Profil
         try {
           await setDoc(doc(db, 'users', user.uid), { name: displayName }, { merge: true });
         } catch (err) {
-          handleFirestoreError(err, OperationType.WRITE, userPath);
+          try {
+            handleFirestoreError(err, OperationType.WRITE, userPath);
+          } catch(e) { } // ignore
         }
       }
       
