@@ -28,6 +28,10 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
 
   const handleEmailAuth = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!auth) {
+      toast.error("Firebase n'est pas configuré.");
+      return;
+    }
     setIsLoading(true);
     try {
       if (authMode === 'login') {
@@ -67,6 +71,10 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
   };
 
   const handleGoogleAuth = async () => {
+    if (!auth) {
+      toast.error("Firebase n'est pas configuré.");
+      return;
+    }
     setIsLoading(true);
     try {
       const provider = new GoogleAuthProvider();

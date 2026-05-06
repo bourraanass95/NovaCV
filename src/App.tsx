@@ -31,9 +31,10 @@ export default function App() {
   });
 
   useEffect(() => {
+    if (!auth) return;
     const unsub = onAuthStateChanged(auth, async (u) => {
       setUser(u);
-      if (u) {
+      if (u && db) {
         // Handle post-payment redirects
         const urlParams = new URLSearchParams(window.location.search);
         const paymentSuccess = urlParams.get('payment_success');
@@ -126,7 +127,7 @@ export default function App() {
 
   const handleCheckoutSuccess = async (details: any) => {
     setCheckoutConfig(prev => ({ ...prev, isOpen: false }));
-    if (checkoutConfig.plan === 'pro' && user) {
+    if (checkoutConfig.plan === 'pro' && user && db) {
         const userPath = `users/${user.uid}`;
         try {
           await setDoc(doc(db, 'users', user.uid), {
@@ -145,7 +146,9 @@ export default function App() {
   };
 
   const handleLogout = async () => {
-    await signOut(auth);
+    if (auth) {
+      await signOut(auth);
+    }
     setUserStatus('free');
     setView('landing');
   };
@@ -216,8 +219,8 @@ export default function App() {
         }}
         onSuccess={async () => {
           setShowAuthModal(false);
-          const currentUser = auth.currentUser;
-          if (currentUser) {
+          const currentUser = auth?.currentUser;
+          if (currentUser && db) {
             const userPath = `users/${currentUser.uid}`;
             try {
               const d = await getDoc(doc(db, 'users', currentUser.uid));

@@ -17,7 +17,7 @@ interface ProfilePageProps {
 }
 
 export default function ProfilePage({ onBack, userStatus, onChangePlan }: ProfilePageProps) {
-  const user = auth.currentUser;
+  const user = auth?.currentUser;
   
   const [displayName, setDisplayName] = useState(user?.displayName || '');
   const [newPassword, setNewPassword] = useState('');
@@ -27,7 +27,7 @@ export default function ProfilePage({ onBack, userStatus, onChangePlan }: Profil
 
   const handleUpdateProfile = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!user) return;
+    if (!user || (!auth && !db)) return;
     setSaving(true);
     try {
       if (displayName !== user.displayName) {

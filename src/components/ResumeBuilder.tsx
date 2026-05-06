@@ -95,7 +95,7 @@ export default function ResumeBuilder({ onBack, initialData: loadedData, user, u
 
 
   const saveToFirestore = async () => {
-    if (!user) return;
+    if (!user || !db) return;
     const cvId = (data as any).id || crypto.randomUUID();
     const resumePath = `resumes/${cvId}`;
     try {
@@ -483,7 +483,7 @@ export default function ResumeBuilder({ onBack, initialData: loadedData, user, u
       const cvId = (data as any).id || crypto.randomUUID();
       const resumePath = `resumes/${cvId}`;
       
-      if (user) {
+      if (user && db) {
         try {
           await setDoc(doc(db, 'resumes', cvId), { 
             ...data,
@@ -589,7 +589,7 @@ export default function ResumeBuilder({ onBack, initialData: loadedData, user, u
       // Mark as downloaded if single paid
       if (userStatus !== 'pro') {
         setCvDownloaded(true);
-        if (user) {
+        if (user && db) {
           const cvId = (data as any).id;
           if (cvId) {
             const resumePath = `resumes/${cvId}`;

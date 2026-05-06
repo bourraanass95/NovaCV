@@ -19,10 +19,13 @@ interface DashboardProps {
 export default function Dashboard({ onNew, onEdit, onLogout, onProfile, userStatus }: DashboardProps & { userStatus: UserStatus }) {
   const [cvs, setCvs] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const user = auth.currentUser;
+  const user = auth?.currentUser;
 
   useEffect(() => {
-    if (!user) return;
+    if (!user || !db) {
+      setLoading(false);
+      return;
+    }
 
     const fetchCvs = async () => {
       try {
@@ -52,6 +55,7 @@ export default function Dashboard({ onNew, onEdit, onLogout, onProfile, userStat
   }, [user]);
 
   const handleDelete = async (id: string) => {
+    if (!db) return;
     if (!confirm("Voulez-vous vraiment supprimer ce CV ?")) return;
     try {
       const resumePath = `resumes/${id}`;
